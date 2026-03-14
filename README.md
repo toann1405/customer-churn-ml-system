@@ -84,38 +84,25 @@ customer-churn-ml/
 
 The current pipeline processes raw data into a **model-ready dataset**.
 
+---
+
 ### 🛠 Setup Environment
+
 ```bash
+# Create virtual environment
 conda create -n churn_project python=3.10
+
+# Activate environment
 conda activate churn_project
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Steps:
-
-# 1. Load raw dataset into SQLite
-
-python src/load_to_sqlite.py
-
-# 2. Run SQL cleaning & feature engineering
-
-python src/run_sql_script.py
-
-# 3. Validate data quality
-
-python src/run_validation.py
-
-# 4. Export processed dataset
-
-python src/export_features.py
+```
+### Run Data Pipeline
 
 ```
-
-Output:
-
-```
-
-data/processed/churn_features.csv
-
+python src/run_pipeline.py
 ```
 
 ---
@@ -159,7 +146,8 @@ data/processed/churn_features.csv
 
 ## 👤 Contact
 
-**Nguyen Duc Toan** *Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM* 📧 **Email:** [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)  
+**Nguyen Duc Toan** - *Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM* 
+📧 **Email:** [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)  
 💼 **LinkedIn:** [Updating](https://linkedin.com/in/your-profile-link)  
 🐙 **GitHub:** [@toann1405](https://github.com/toann1405)
 ---
