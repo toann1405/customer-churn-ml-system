@@ -1,0 +1,11 @@
+# database
+database/*.db
+
+# raw datasets
+data/raw/*.csv
+
+# python cache
+__pycache__/
+
+# env
+.env
