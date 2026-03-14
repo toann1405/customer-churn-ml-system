@@ -14,8 +14,8 @@ The goal is to help businesses **identify customers at risk of leaving** and ena
 
 Dataset: **Telco Customer Churn**
 
-- 7,043 customers  
-- 33 features  
+- 7,043 customers
+- 33 features
 - Target variable: `Churn`
 
 ---
@@ -99,6 +99,7 @@ conda activate churn_project
 pip install -r requirements.txt
 
 ```
+
 ### Run Data Pipeline
 
 ```
@@ -109,14 +110,16 @@ python src/run_pipeline.py
 
 ## 🚀 Project Progress
 
-| Phase | Description | Status |
-|------|-------------|--------|
-| Phase 1 | Project Setup | ✅ Completed |
-| Phase 2 | Data Engineering Pipeline | ✅ Completed |
-| Phase 3 | Exploratory Data Analysis | ⏳ In Progress |
-| Phase 4 | Machine Learning Modeling | ⏳ Upcoming |
-| Phase 5 | Model Evaluation | ⏳ Upcoming |
-| Phase 6 | Deployment (Dashboard/API) | ⏳ Upcoming |
+| Phase   | Description                | Status                                   |
+| ------- | -------------------------- | ---------------------------------------- |
+| Phase 1 | Project Setup              | ✅ Completed                             |
+| Phase 2 | Data Engineering Pipeline  | ✅ Completed                             |
+| Phase 3 | Exploratory Data Analysis  | ✅ Completed (EDA insights consolidated) |
+| Phase 4 | Machine Learning Modeling  | ⏳ Upcoming                              |
+| Phase 5 | Model Evaluation           | ⏳ Upcoming                              |
+| Phase 6 | Deployment (Dashboard/API) | ⏳ Upcoming                              |
+
+> **Note:** EDA is now complete, with redundant analyses removed and insights consolidated into a single, clean narrative.
 
 ---
 
@@ -146,14 +149,13 @@ python src/run_pipeline.py
 
 ## 👤 Contact
 
-**Nguyen Duc Toan** - *Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM* 
+**Nguyen Duc Toan** - _Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM_
 
 📧 **Email:** [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)  
 💼 **LinkedIn:** [Updating](https://linkedin.com/in/your-profile-link)  
 🐙 **GitHub:** [@toann1405](https://github.com/toann1405)
+
 ---
 
 ⭐ **Project Status:** In Development  
-Latest milestone: **Data Engineering Pipeline Completed**
-
-
+Latest milestone: **Exploratory Data Analysis Completed**
