@@ -147,6 +147,7 @@ python src/run_pipeline.py
 ## 👤 Contact
 
 **Nguyen Duc Toan** - *Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM* 
+
 📧 **Email:** [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)  
 💼 **LinkedIn:** [Updating](https://linkedin.com/in/your-profile-link)  
 🐙 **GitHub:** [@toann1405](https://github.com/toann1405)
