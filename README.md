@@ -58,7 +58,6 @@ customer-churn-ml-system/
 │   ├── raw/                # Raw CSV source data
 │   └── database/           # SQLite database (output of pipeline)
 │
-├── docs/                   # Notes, analyses, and docs
 ├── models/                 # Trained model artifacts (future)
 ├── notebooks/              # EDA & experiments (Jupyter notebooks)
 ├── sql_scripts/            # SQL cleaning + transformation scripts
