@@ -8,118 +8,123 @@
 
 ## 📝 Project Overview
 
-This project builds an **end-to-end machine learning system** to predict **customer churn** for a telecommunications company.
+This project builds an **end-to-end churn prediction system** for a telecommunications dataset.
 
-The goal is to help businesses **identify customers at risk of leaving** and enable **data-driven retention strategies**.
+The goal is to help businesses **spot at-risk customers**, **understand churn drivers**, and **prioritize retention actions**.
 
-Dataset: **Telco Customer Churn**
+Dataset: **Telco Customer Churn (IBM)**
 
-- 7,043 customers
-- 33 features
+- ~7,000 customers
+- ~30 features
 - Target variable: `Churn`
 
 ---
 
-## 🎯 Business Goals
+## 🧱 Project Roadmap (Current Progress)
 
-- Identify **key factors driving churn**
-- Predict **customers likely to leave**
-- Segment customers for **retention strategies**
-- Build a **deployable ML pipeline**
+This repo is organized as a phased workflow.
 
----
+### ✅ Phase 1: Data Engineering & Infrastructure (Implemented)
 
-## ⚙️ ML Pipeline Architecture
+- **Ingest raw CSV** into **SQLite** (`data/database/telco_customer_churn.db`)
+- **Clean + standardize** via SQL (SQL script: `sql_scripts/transform_data.sql`)
+- Output: **`cleaned_churn` table** ready for analysis
 
-```
+### ✅ Phase 2: Exploratory Data Analysis (Done)
 
-Raw Dataset
-↓
-Data Ingestion (Python)
-↓
-SQL Data Cleaning
-↓
-Feature Engineering
-↓
-Data Validation
-↓
-Processed Dataset
-↓
-EDA
-↓
-Machine Learning Model
-↓
-Deployment (Dashboard)
+- EDA captured in `notebooks/01_EDA.ipynb`
+- Covers distribution analysis, churn drivers, and feature behavior
 
-```
+### ⏳ Phase 3: ML Engineering & Pipeline (Upcoming)
+
+- Build preprocessing + modeling pipeline (scikit-learn / XGBoost)
+- Add hyperparameter tuning, cross-validation, and robust evaluation metrics
+
+### ⏳ Phase 4: Deployment & Delivery (Upcoming)
+
+- Build a Streamlit app for real-time churn scoring
+- Add explainability with SHAP
+- Finalize documentation and deliverables
 
 ---
 
-## 🗂 Project Structure
+## 🗂 Project Structure (Current)
 
 ```
-
-customer-churn-ml/
+customer-churn-ml-system/
 │
-├── app/                # Streamlit dashboard (future)
+├── app/                    # Streamlit UI (in development)
 ├── data/
-│   ├── raw/
-│   └── processed/
+│   ├── raw/                # Raw CSV source data
+│   └── database/           # SQLite database (output of pipeline)
 │
-├── database/           # SQLite database
-├── docs/               # Documentation
-├── models/             # Trained models
-├── notebooks/          # EDA & experiments
-├── sql/                # SQL cleaning & feature engineering
-├── src/                # Python pipeline scripts
+├── docs/                   # Notes, analyses, and docs
+├── models/                 # Trained model artifacts (future)
+├── notebooks/              # EDA & experiments (Jupyter notebooks)
+├── sql_scripts/            # SQL cleaning + transformation scripts
+├── src/                    # Python orchestration scripts
 │
 ├── requirements.txt
 └── README.md
-
 ```
 
 ---
 
-## 🔧 Data Engineering Pipeline (Completed)
+## 🛠 How to Run the Data Pipeline (Phase 1)
 
-The current pipeline processes raw data into a **model-ready dataset**.
-
----
-
-### 🛠 Setup Environment
+### 1) Setup environment
 
 ```bash
-# Create virtual environment
-conda create -n churn_project python=3.10
-
-# Activate environment
+conda create -n churn_project python=3.10 -y
 conda activate churn_project
-
-# Install dependencies
 pip install -r requirements.txt
-
 ```
 
-### Run Data Pipeline
+### 2) Run ingestion + SQL cleaning
 
+```bash
+python src/database_manager.py \
+  --csv data/raw/telco_customer_churn.csv \
+  --db data/database/telco_customer_churn.db \
+  --sql sql_scripts/transform_data.sql
 ```
-python src/run_pipeline.py
-```
+
+✅ This will create (or update) the SQLite database and produce:
+
+- `raw_customer_churn` table (raw CSV data)
+- `cleaned_churn` table (cleaned / engineered output)
 
 ---
 
-## 🚀 Project Progress
+## 🔎 How to Explore (Phase 2)
 
-| Phase   | Description                | Status                                   |
-| ------- | -------------------------- | ---------------------------------------- |
-| Phase 1 | Project Setup              | ✅ Completed                             |
-| Phase 2 | Data Engineering Pipeline  | ✅ Completed                             |
-| Phase 3 | Exploratory Data Analysis  | ✅ Completed (EDA insights consolidated) |
-| Phase 4 | Machine Learning Modeling  | ⏳ Upcoming                              |
-| Phase 5 | Model Evaluation           | ⏳ Upcoming                              |
-| Phase 6 | Deployment (Dashboard/API) | ⏳ Upcoming                              |
+Open and run the EDA notebook:
 
-> **Note:** EDA is now complete, with redundant analyses removed and insights consolidated into a single, clean narrative.
+```bash
+jupyter lab notebooks/01_EDA.ipynb
+```
+
+Key notebook output:
+
+- Visual churn patterns by feature (contract, tenure, services, billing)
+- Feature correlations + churn drivers
+- Segmentation analysis and recommendations
+
+---
+
+## 🧪 What's Next (Phase 3 & 4)
+
+- Build a **scikit-learn pipeline** (imputation, encoding, scaling, model training)
+- Experiment with **XGBoost / RandomForest**
+- Add **model evaluation metrics** (precision/recall/F1, ROC-AUC, PR-AUC)
+- Deploy with **Streamlit + SHAP** for interpretability
+
+---
+
+## 📌 Notes / Tips
+
+- The SQL transform script is intentionally in **English** for clarity and reuse.
+- The notebook is intentionally **self-contained**; it reads directly from the cleaned SQLite table.
 
 ---
 
