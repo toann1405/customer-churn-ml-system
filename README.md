@@ -2,66 +2,95 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
 [![SQL](https://img.shields.io/badge/SQL-SQLite-orange.svg)](https://www.sqlite.org/)
-[![Status](https://img.shields.io/badge/Status-In--Progress-yellow.svg)]()
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.55-FF4B4B.svg)](https://streamlit.io/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.7-F7931E.svg)](https://scikit-learn.org/)
+[![SHAP](https://img.shields.io/badge/SHAP-0.49-brightgreen.svg)](https://shap.readthedocs.io/)
+[![Status](https://img.shields.io/badge/Status-Completed-success.svg)]()
 
 ---
 
 ## 📝 Project Overview
 
-This project builds an **end-to-end churn prediction system** for a telecommunications dataset.
+An **end-to-end churn prediction system** for a telecommunications dataset, from raw data ingestion to a deployed interactive web application.
 
-The goal is to help businesses **spot at-risk customers**, **understand churn drivers**, and **prioritize retention actions**.
+The system helps businesses **spot at-risk customers**, **understand churn drivers**, and **prioritize retention actions** — with full model explainability via SHAP.
 
-Dataset: **Telco Customer Churn (IBM)**
-
-- ~7,000 customers
-- ~30 features
-- Target variable: `Churn`
+**Dataset:** Telco Customer Churn (IBM) · ~7,000 customers · ~30 features · Target: `Churn`
 
 ---
 
-## 🧱 Project Roadmap (Current Progress)
+## 🏆 Model Results
 
-This repo is organized as a phased workflow.
+| Model | Recall (Churn) | Precision | ROC-AUC | Notes |
+|:---|:---:|:---:|:---:|:---|
+| **Logistic Regression** ✅ | **0.85** | 0.49 | **0.848** | `class_weight='balanced'`, threshold=0.40 |
+| Random Forest | 0.49 | 0.60 | 0.837 | `class_weight='balanced'` |
+| XGBoost | 0.69 | 0.54 | 0.833 | `scale_pos_weight` |
 
-### ✅ Phase 1: Data Engineering & Infrastructure (Implemented)
-
-- **Ingest raw CSV** into **SQLite** (`data/database/telco_customer_churn.db`)
-- **Clean + standardize** via SQL (SQL script: `sql_scripts/transform_data.sql`)
-- Output: **`cleaned_churn` table** ready for analysis
-
-### ✅ Phase 2: Exploratory Data Analysis (Done)
-
-- EDA captured in `notebooks/01_EDA.ipynb`
-- Covers distribution analysis, churn drivers, and feature behavior
-
-### ⏳ Phase 3: ML Engineering & Pipeline (Upcoming)
-
-- Build preprocessing + modeling pipeline (scikit-learn / XGBoost)
-- Add hyperparameter tuning, cross-validation, and robust evaluation metrics
-
-### ⏳ Phase 4: Deployment & Delivery (Upcoming)
-
-- Build a Streamlit app for real-time churn scoring
-- Add explainability with SHAP
-- Finalize documentation and deliverables
+**Key decisions:**
+- Primary metric: **Recall** (minimizing missed churners is business priority)
+- Class imbalance handled via `class_weight='balanced'`
+- Final threshold: **0.40** (optimized for Recall vs Precision trade-off)
 
 ---
 
-## 🗂 Project Structure (Current)
+## 🧱 Project Roadmap
+
+### ✅ Phase 1: Data Engineering & Infrastructure
+
+- Ingest raw CSV → **SQLite** (`data/database/telco_customer_churn.db`)
+- Clean + standardize via SQL (`sql_scripts/transform_data.sql`)
+- Output: `cleaned_churn` table ready for analysis
+
+### ✅ Phase 2: Exploratory Data Analysis
+
+- EDA in `notebooks/01_EDA.ipynb`
+- Churn drivers: contract type, tenure, internet service, monthly charges
+- Feature correlations, distribution analysis, segmentation
+
+### ✅ Phase 3: ML Engineering & Pipeline
+
+- Preprocessing pipeline: `StandardScaler` + `OneHotEncoder` (via `ColumnTransformer`)
+- Feature engineering: `AvgCharges = TotalCharges / tenure`
+- Models: Logistic Regression, Random Forest, XGBoost
+- Class imbalance: `class_weight='balanced'` + threshold optimization
+- See `notebooks/02_modeling.ipynb`
+
+### ✅ Phase 4: Deployment & Delivery
+
+- **Streamlit app** (`app/app.py`): real-time prediction + SHAP explanation + performance dashboard
+- **SHAP integration** (`LinearExplainer`): explains why each customer is predicted to churn
+- Final documentation: this README
+
+---
+
+## 🗂 Project Structure
 
 ```
 customer-churn-ml-system/
 │
-├── app/                    # Streamlit UI (in development)
-├── data/
-│   ├── raw/                # Raw CSV source data
-│   └── database/           # SQLite database (output of pipeline)
+├── app/
+│   └── app.py                   # Streamlit web application
 │
-├── models/                 # Trained model artifacts (future)
-├── notebooks/              # EDA & experiments (Jupyter notebooks)
-├── sql_scripts/            # SQL cleaning + transformation scripts
-├── src/                    # Python orchestration scripts
+├── data/
+│   ├── raw/                     # Raw CSV source data
+│   ├── database/                # SQLite database
+│   └── processed/               # Feature-engineered test set (CSV)
+│
+├── models/
+│   ├── churn_pipeline.pkl       # Trained sklearn Pipeline (preprocessor + LR)
+│   ├── model_metadata.pkl       # Threshold, metrics, feature list
+│   └── shap_background.pkl      # SHAP background dataset
+│
+├── notebooks/
+│   ├── 01_EDA.ipynb             # Exploratory Data Analysis
+│   └── 02_modeling.ipynb        # ML pipeline, training & evaluation
+│
+├── sql_scripts/
+│   └── transform_data.sql       # SQL cleaning + transformation
+│
+├── src/
+│   └── database_manager.py      # Data ingestion orchestrator
 │
 ├── requirements.txt
 └── README.md
@@ -69,7 +98,7 @@ customer-churn-ml-system/
 
 ---
 
-## 🛠 How to Run the Data Pipeline (Phase 1)
+## 🚀 How to Run
 
 ### 1) Setup environment
 
@@ -79,7 +108,7 @@ conda activate churn_project
 pip install -r requirements.txt
 ```
 
-### 2) Run ingestion + SQL cleaning
+### 2) Phase 1 — Data Pipeline
 
 ```bash
 python src/database_manager.py \
@@ -88,78 +117,53 @@ python src/database_manager.py \
   --sql sql_scripts/transform_data.sql
 ```
 
-✅ This will create (or update) the SQLite database and produce:
-
-- `raw_customer_churn` table (raw CSV data)
-- `cleaned_churn` table (cleaned / engineered output)
-
----
-
-## 🔎 How to Explore (Phase 2)
-
-Open and run the EDA notebook:
+### 3) Phase 2 & 3 — EDA & Modeling
 
 ```bash
 jupyter lab notebooks/01_EDA.ipynb
+jupyter lab notebooks/02_modeling.ipynb
 ```
 
-Key notebook output:
+> Run all cells in `02_modeling.ipynb` through **Section 15 (Model Export)** to generate the model artifacts in `models/` and processed data in `data/processed/`.
 
-- Visual churn patterns by feature (contract, tenure, services, billing)
-- Feature correlations + churn drivers
-- Segmentation analysis and recommendations
+### 4) Phase 4 — Launch Streamlit App
 
----
+```bash
+streamlit run app/app.py
+```
 
-## 🧪 What's Next (Phase 3 & 4)
+Open [http://localhost:8501](http://localhost:8501) in your browser.
 
-- Build a **scikit-learn pipeline** (imputation, encoding, scaling, model training)
-- Experiment with **XGBoost / RandomForest**
-- Add **model evaluation metrics** (precision/recall/F1, ROC-AUC, PR-AUC)
-- Deploy with **Streamlit + SHAP** for interpretability
-
----
-
-## 📌 Notes / Tips
-
-- The SQL transform script is intentionally in **English** for clarity and reuse.
-- The notebook is intentionally **self-contained**; it reads directly from the cleaned SQLite table.
+**App features:**
+- 🔮 **Predict tab** — enter customer info → get churn probability + SHAP explanation
+- 📈 **Dashboard tab** — interactive threshold slider, confusion matrix, ROC curve, metric comparison
+- ℹ️ **About tab** — model explanation, feature list, business rationale
 
 ---
 
 ## 🛠 Technologies
 
-**Languages**
-
-- Python
-- SQL
-
-**Libraries**
-
-- pandas
-- numpy
-- scikit-learn
-- matplotlib
-- seaborn
-
-**Tools**
-
-- SQLite
-- Jupyter Notebook
-- Git
-- VSCode
+| Category | Stack |
+|:---|:---|
+| **Language** | Python 3.10, SQL |
+| **ML** | scikit-learn, XGBoost, imbalanced-learn |
+| **Explainability** | SHAP |
+| **Web App** | Streamlit |
+| **Data** | pandas, numpy |
+| **Visualization** | matplotlib, seaborn |
+| **Storage** | SQLite, joblib |
+| **Dev Tools** | Jupyter, Git, VSCode |
 
 ---
 
 ## 👤 Contact
 
-**Nguyen Duc Toan** - _Computer Science Student @ Ho Chi Minh City University of Technology (HCMUT) - VNUHCM_
+**Nguyen Duc Toan** — _CS Student @ HCMUT - VNUHCM_
 
-📧 **Email:** [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)  
-💼 **LinkedIn:** [Updating](https://linkedin.com/in/your-profile-link)  
-🐙 **GitHub:** [@toann1405](https://github.com/toann1405)
+📧 [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)
+💼 [LinkedIn](https://linkedin.com/in/your-profile-link)
+🐙 [@toann1405](https://github.com/toann1405)
 
 ---
 
-⭐ **Project Status:** In Development  
-Latest milestone: **Exploratory Data Analysis Completed**
+⭐ **Project Status:** Completed
