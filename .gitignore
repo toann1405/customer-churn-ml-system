@@ -1,8 +1,8 @@
 # database
-database/*.db
+#database/*.db
 
 # raw datasets
-data/raw/*.csv
+#data/raw/*.csv
 
 # python cache
 __pycache__/
