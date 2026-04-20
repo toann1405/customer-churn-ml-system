@@ -164,7 +164,7 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 **Nguyen Duc Toan** — _CS Student @ HCMUT - VNUHCM_
 
 📧 [nductoan1815@gmail.com](mailto:nductoan1815@gmail.com)
-💼 [LinkedIn](https://linkedin.com/in/your-profile-link)
+💼 [LinkedIn](https://www.linkedin.com/in/toann1405)
 🐙 [@toann1405](https://github.com/toann1405)
 
 ---
