@@ -11,6 +11,7 @@ from sklearn.metrics import (
 )
 import seaborn as sns
 import os
+import sqlite3
 
 matplotlib.use("Agg")
 
@@ -19,7 +20,7 @@ matplotlib.use("Agg")
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Churn Prediction Dashboard",
-    page_icon="📊",
+    page_icon="",
     layout="wide",
 )
 
@@ -45,6 +46,20 @@ def load_test_data():
     df = pd.read_csv(path)
     return df
 
+@st.cache_data
+def load_db_data():
+    db_path = os.path.join(os.path.dirname(__file__), "..", "data", "database", "telco_customer_churn.db")
+    conn = sqlite3.connect(db_path)
+    try:
+        df = pd.read_sql_query("SELECT * FROM cleaned_churn", conn)
+    finally:
+        conn.close()
+
+    if "Churn" in df.columns and df["Churn"].dtype == object:
+        df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
+
+    return df
+
 @st.cache_resource
 def load_shap_explainer(_pipeline, _X_bg):
     preprocessor = _pipeline.named_steps["preprocessor"]
@@ -55,19 +70,23 @@ def load_shap_explainer(_pipeline, _X_bg):
     cat_names      = list(cat_encoder.get_feature_names_out(CATEGORICAL_FEATURES))
     all_feat_names = NUMERIC_FEATURES + cat_names
 
-    # Transform background → DataFrame (avoids feature_names_in_ mismatch in sklearn 1.7+)
-    X_bg_arr   = np.array(preprocessor.transform(_X_bg))
+    # Transform background to a dense array for SHAP compatibility
+    X_bg_trans = preprocessor.transform(_X_bg)
+    X_bg_arr   = X_bg_trans.toarray() if hasattr(X_bg_trans, "toarray") else np.asarray(X_bg_trans)
     background = shap.sample(X_bg_arr, min(100, len(_X_bg)))
+    model_feat_names = getattr(classifier, "feature_names_in_", None)
+    feature_names = list(model_feat_names) if model_feat_names is not None else all_feat_names
+    background_df = pd.DataFrame(background, columns=feature_names)
 
-    return shap.LinearExplainer(classifier, background), all_feat_names
+    return shap.LinearExplainer(classifier, background_df), feature_names
 
 # ─────────────────────────────────────────────
 # Feature metadata (must match notebook)
 # ─────────────────────────────────────────────
 NUMERIC_FEATURES     = ["tenure", "MonthlyCharges", "TotalCharges", "AvgCharges"]
 CATEGORICAL_FEATURES = [
-    "gender", "SeniorCitizen", "Partner", "Dependents",
-    "PhoneService", "MultipleLines", "InternetService",
+    "SeniorCitizen", "Partner", "Dependents",
+    "InternetService",
     "OnlineSecurity", "OnlineBackup", "DeviceProtection",
     "TechSupport", "StreamingTV", "StreamingMovies",
     "Contract", "PaperlessBilling", "PaymentMethod",
@@ -76,7 +95,7 @@ CATEGORICAL_FEATURES = [
 # ─────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────
-st.sidebar.title("📊 Churn Prediction")
+st.sidebar.title("Churn Prediction")
 st.sidebar.caption("Telco Customer Churn · Logistic Regression")
 threshold = st.sidebar.slider(
     "Decision Threshold",
@@ -85,7 +104,7 @@ threshold = st.sidebar.slider(
     help="Lower → higher Recall (catch more churners). Higher → higher Precision (fewer false alarms)."
 )
 tab_predict, tab_dashboard, tab_about = st.tabs(
-    ["🔮 Predict", "📈 Dashboard", "ℹ️ About"]
+    ["Predict", "Dashboard", "About"]
 )
 
 # ═════════════════════════════════════════════
@@ -122,13 +141,10 @@ with tab_predict:
         streaming_movies   = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
 
     with col3:
-        st.subheader("Demographics & Phone")
-        gender         = st.selectbox("Gender",         ["Male", "Female"])
+        st.subheader("Demographics")
         senior_citizen = st.selectbox("Senior Citizen", ["No", "Yes"])
         partner        = st.selectbox("Partner",        ["Yes", "No"])
         dependents     = st.selectbox("Dependents",     ["Yes", "No"])
-        phone_service  = st.selectbox("Phone Service",  ["Yes", "No"])
-        multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
 
     # ── Build input dataframe ──────────────────
     total_charges = monthly_charges * tenure
@@ -139,12 +155,9 @@ with tab_predict:
         "MonthlyCharges":   monthly_charges,
         "TotalCharges":     total_charges,
         "AvgCharges":       avg_charges,
-        "gender":           gender,
         "SeniorCitizen":    "Yes" if senior_citizen == "Yes" else "No",
         "Partner":          partner,
         "Dependents":       dependents,
-        "PhoneService":     phone_service,
-        "MultipleLines":    multiple_lines,
         "InternetService":  internet_service,
         "OnlineSecurity":   online_security,
         "OnlineBackup":     online_backup,
@@ -158,7 +171,7 @@ with tab_predict:
     }])
 
     st.divider()
-    if st.button("🔮 Predict Churn", use_container_width=True, type="primary"):
+    if st.button("Predict Churn", use_container_width=True, type="primary"):
         proba = pipeline.predict_proba(input_data)[0][1]
         churn = proba >= threshold
 
@@ -170,46 +183,46 @@ with tab_predict:
             st.metric("Threshold Used", f"{threshold:.2f}")
         with res_col3:
             if churn:
-                st.error("⚠️ HIGH RISK — Likely to Churn")
+                st.error("HIGH RISK — Likely to Churn")
             else:
-                st.success("✅ LOW RISK — Likely to Stay")
+                st.success("LOW RISK — Likely to Stay")
 
         # ── SHAP explanation ───────────────────
         st.subheader("Why this prediction? (SHAP Feature Impact)")
-        st.info("🚧 SHAP explanation is temporarily disabled — will be fixed in the next update.")
-        # TODO: Fix SHAP LinearExplainer compatibility with sklearn 1.7+ (feature_names_in_ issue)
-        # try:
-        #     test_df  = load_test_data()
-        #     X_bg     = test_df.drop(columns=["Churn"])
-        #     explainer, all_feat_names = load_shap_explainer(pipeline, X_bg)
-        #
-        #     preprocessor = pipeline.named_steps["preprocessor"]
-        #     X_input_arr  = np.array(preprocessor.transform(input_data))
-        #
-        #     shap_vals_raw = explainer.shap_values(X_input_arr)
-        #     expected_val  = explainer.expected_value
-        #
-        #     if isinstance(shap_vals_raw, list):
-        #         sv = shap_vals_raw[1][0]
-        #         ev = expected_val[1] if hasattr(expected_val, "__len__") else expected_val
-        #     else:
-        #         sv = shap_vals_raw[0]
-        #         ev = float(expected_val)
-        #
-        #     shap.plots.waterfall(
-        #         shap.Explanation(
-        #             values       = sv,
-        #             base_values  = ev,
-        #             data         = X_input_arr[0],
-        #             feature_names= all_feat_names,
-        #         ),
-        #         max_display=12,
-        #         show=False,
-        #     )
-        #     st.pyplot(plt.gcf(), use_container_width=True)
-        #     plt.close()
-        # except Exception as e:
-        #     st.warning(f"SHAP explanation unavailable: {e}")
+        try:
+            test_df  = load_test_data()
+            X_bg     = test_df.drop(columns=["Churn"])
+            explainer, all_feat_names = load_shap_explainer(pipeline, X_bg)
+
+            preprocessor = pipeline.named_steps["preprocessor"]
+            X_input_trans = preprocessor.transform(input_data)
+            X_input_arr = X_input_trans.toarray() if hasattr(X_input_trans, "toarray") else np.asarray(X_input_trans)
+            X_input_df = pd.DataFrame(X_input_arr, columns=all_feat_names)
+
+            shap_vals_raw = explainer.shap_values(X_input_df)
+            expected_val  = explainer.expected_value
+
+            if isinstance(shap_vals_raw, list):
+                sv = shap_vals_raw[1][0]
+                ev = expected_val[1] if hasattr(expected_val, "__len__") else expected_val
+            else:
+                sv = shap_vals_raw[0]
+                ev = float(expected_val)
+
+            shap.plots.waterfall(
+                shap.Explanation(
+                    values        = sv,
+                    base_values   = ev,
+                    data          = X_input_df.iloc[0].to_numpy(),
+                    feature_names = all_feat_names,
+                ),
+                max_display=12,
+                show=False,
+            )
+            st.pyplot(plt.gcf(), use_container_width=True)
+            plt.close()
+        except Exception as e:
+            st.warning(f"SHAP explanation unavailable: {e}")
 
 
 # ═════════════════════════════════════════════
@@ -222,6 +235,7 @@ with tab_dashboard:
         pipeline = load_pipeline()
         meta     = load_metadata()
         test_df  = load_test_data()
+        db_df    = load_db_data()
 
         X_test_raw = test_df.drop(columns=["Churn"])
         y_test     = test_df["Churn"]
@@ -278,6 +292,78 @@ with tab_dashboard:
 
         st.divider()
 
+        # ── Business Insight Charts ───────────
+        st.subheader("Customer Segments Overview")
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.caption("Churn Rate by Contract")
+            contract_rate = (
+                db_df.groupby("Contract")["Churn"].mean()
+                .sort_values(ascending=False)
+                .mul(100)
+            )
+            fig_contract, ax_contract = plt.subplots(figsize=(5, 4))
+            sns.barplot(x=contract_rate.values, y=contract_rate.index, ax=ax_contract, palette="Blues_r")
+            ax_contract.set_xlabel("Churn Rate (%)")
+            ax_contract.set_ylabel("Contract")
+            ax_contract.set_xlim(0, 100)
+            st.pyplot(fig_contract, use_container_width=True)
+            plt.close()
+
+        with c2:
+            st.caption("Churn Rate by Internet Service")
+            internet_rate = (
+                db_df.groupby("InternetService")["Churn"].mean()
+                .sort_values(ascending=False)
+                .mul(100)
+            )
+            fig_internet, ax_internet = plt.subplots(figsize=(5, 4))
+            sns.barplot(x=internet_rate.values, y=internet_rate.index, ax=ax_internet, palette="Greens_r")
+            ax_internet.set_xlabel("Churn Rate (%)")
+            ax_internet.set_ylabel("Internet Service")
+            ax_internet.set_xlim(0, 100)
+            st.pyplot(fig_internet, use_container_width=True)
+            plt.close()
+
+        with c3:
+            st.caption("Churn Rate by Payment Method")
+            payment_rate = (
+                db_df.groupby("PaymentMethod")["Churn"].mean()
+                .sort_values(ascending=False)
+                .mul(100)
+            )
+            fig_payment, ax_payment = plt.subplots(figsize=(5, 4))
+            sns.barplot(x=payment_rate.values, y=payment_rate.index, ax=ax_payment, palette="Oranges_r")
+            ax_payment.set_xlabel("Churn Rate (%)")
+            ax_payment.set_ylabel("Payment Method")
+            ax_payment.set_xlim(0, 100)
+            st.pyplot(fig_payment, use_container_width=True)
+            plt.close()
+
+        st.divider()
+
+        st.subheader("Tenure vs Monthly Charges")
+        fig_scatter, ax_scatter = plt.subplots(figsize=(8, 5))
+        scatter_df = db_df[["tenure", "MonthlyCharges", "Churn"]].dropna().sample(
+            n=min(2000, len(db_df)), random_state=42
+        )
+        sns.scatterplot(
+            data=scatter_df,
+            x="tenure",
+            y="MonthlyCharges",
+            hue="Churn",
+            palette={0: "#1f77b4", 1: "#d62728"},
+            alpha=0.6,
+            ax=ax_scatter,
+        )
+        ax_scatter.set_xlabel("Tenure (months)")
+        ax_scatter.set_ylabel("Monthly Charges")
+        ax_scatter.legend(title="Churn", labels=["Stay", "Churn"])
+        ax_scatter.grid(True, alpha=0.2)
+        st.pyplot(fig_scatter, use_container_width=True)
+        plt.close()
+
         # ── Threshold comparison table ─────────
         st.subheader("Threshold Comparison")
         rows = []
@@ -301,7 +387,7 @@ with tab_dashboard:
         )
 
         # ── Classification report ──────────────
-        with st.expander("📋 Full Classification Report"):
+        with st.expander("Full Classification Report"):
             report_default = classification_report(y_test, y_pred_default, output_dict=True)
             report_opt     = classification_report(y_test, y_pred_opt,     output_dict=True)
             rc1, rc2 = st.columns(2)
@@ -313,7 +399,7 @@ with tab_dashboard:
                 st.dataframe(pd.DataFrame(report_opt).T.round(3))
 
     except FileNotFoundError:
-        st.warning("⚠️ Processed test data not found. Please run Section 15 of the notebook first to export model artifacts.")
+        st.warning("Processed test data not found. Please run Section 15 of the notebook first to export model artifacts.")
 
 
 # ═════════════════════════════════════════════
@@ -363,8 +449,8 @@ making Logistic Regression an ideal choice over more complex tree-based models.
     st.markdown("""
 | Error Type | Business Impact |
 |:---|:---|
-| **False Negative** (miss a churner) | 🔴 Customer leaves → lost Monthly Revenue forever |
-| **False Positive** (flag a loyal customer) | 🟡 Unnecessary retention offer → small cost |
+| **False Negative** (miss a churner) | Customer leaves → lost Monthly Revenue forever |
+| **False Positive** (flag a loyal customer) | Unnecessary retention offer → small cost |
 
 Minimizing **False Negatives** (maximizing Recall) is the business priority.
 A lower threshold trades some Precision for higher Recall — acceptable for this use case.
